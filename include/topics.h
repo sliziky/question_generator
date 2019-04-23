@@ -32,7 +32,7 @@ private slots:
     void on_clearButton_clicked();
 
 public:
-    void setMarked( const QVector<bool>& ) const;
+    void setChecked( const QVector<bool>& ) const;
 
 private:
     Ui::topics*         ui;

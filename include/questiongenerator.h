@@ -2,12 +2,12 @@
 #define QUESTIONGENERATOR_H
 
 #include <QDialog>
-#include <QFile>
-#include <QVector>
-#include "topics.h"
+
 class topics;
 class QLabel;
 class Question;
+class QCheckBox;
+
 namespace Ui {
     class QuestionGenerator;
 }
@@ -38,9 +38,7 @@ private slots:
     void on_loadDefault_clicked();
     void on_clear_clicked();
     void on_chooseTopicsButton_clicked();
-
     void on_minSpinBox_valueChanged(int);
-
     void on_answerButton_1_clicked();
     void on_answerButton_2_clicked();
     void on_answerButton_3_clicked();
@@ -49,41 +47,33 @@ private slots:
     void on_answerButton_6_clicked();
     void on_answerButton_7_clicked();
     void on_answerButton_8_clicked();
-
     void on_showAnswersButton_clicked();
 
-public:
-    void                         setTopics(QVector<bool>&&);
 private:
     Ui::QuestionGenerator*        ui;
 
-  //  QVector<QVector<QByteArray>> _answers;
     QVector<QPushButton*>        _buttons;
     QVector<QCheckBox*>          _checkBoxes;
-  //  QVector<QVector<bool>>       _correctAnswers;
     QVector<QLabel*>             _labels;
     unsigned long                _numberOfQuestion { 1 };
     int                          _offset { 0 };
     float                        _questionsAnswered { 0 };
-   // QVector<QByteArray>          _questions;
     QVector<bool>                _ranges;
     float                        _score { 0 };
     QVector<bool>                _topics;
-    topics*                      _topicsWindow {};
-    QVector<Question>            _myQuestions;
+    QVector<Question>            _questions;
+
     int                          _countCorrectAnswers( const QVector<bool>&);
-    QVector<bool>                _extractInputAnswers();
-
-
+    QVector<bool>                _getUserAnswers();
     unsigned long                _generateQuestionNumber( unsigned int, unsigned int ) const;
     int                          _loadFile( const QString& );
     bool                         _isCorrectAnswer( QString& );
     // helper functions
-    void                         _fillQuestion() const;
+    void                         _fillQuestionLabel() const;
     void                         _clearBoxes() const;
     void                         _clearButtonsBackground();
     void                         _setFontItalicUnderlined(bool);
-    void                         _fillAnswers() const;
+    void                         _fillAnswersLabel() const;
     void                         _fillRanges();
     void                         _fillButtonArray();
     void                         _fillCheckBoxArray();

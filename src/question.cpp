@@ -14,13 +14,3 @@ const QVector<QByteArray>& Question::answers() const
 {
     return _answers;
 }
-
-int Question::questionNumber() const
-{
-    return _questionNumber;
-}
-
-void Question::setQuestionNumber(int questionNumber)
-{
-    _questionNumber = questionNumber;
-}

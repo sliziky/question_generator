@@ -47,7 +47,7 @@ void topics::_fillBoxesVector() {
     _boxes.append (ui->checkBox_18);
 }
 
-void topics::setMarked( const QVector<bool>& checked ) const {
+void topics::setChecked( const QVector<bool>& checked ) const {
     /**
     @in QVector<bool>
     Functon checks the given checkboxes
@@ -85,12 +85,12 @@ QVector<bool> topics::_getChecked() const {
 void topics::on_allCheckBox_clicked () {
     // check all the checkboxes
     ui->allCheckBox->setChecked (true);
-    setMarked( QVector<bool> (18, true) );
+    setChecked( QVector<bool> (18, true) );
 }
 
 void topics::on_clearButton_clicked()
 {
     // uncheck all the checkboxes
     ui->allCheckBox->setChecked (false);
-    setMarked( QVector<bool> (18, false) );
+    setChecked( QVector<bool> (18, false) );
 }
