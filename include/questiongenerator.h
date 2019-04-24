@@ -63,11 +63,11 @@ private:
     QVector<bool>                _topics;
     QVector<Question>            _questions;
 
-    int                          _countCorrectAnswers( const QVector<bool>&);
+    int                          _countCorrectAnswers(const QVector<bool>&);
     QVector<bool>                _getUserAnswers();
-    unsigned long                _generateQuestionNumber( unsigned int, unsigned int ) const;
-    int                          _loadFile( const QString& );
-    bool                         _isCorrectAnswer( QString& );
+    unsigned long                _generateQuestionNumber(unsigned int, unsigned int) const;
+    int                          _loadFile(const QString&);
+    bool                         _isCorrectAnswer(QString&);
     // helper functions
     void                         _fillQuestionLabel() const;
     void                         _clearBoxes() const;

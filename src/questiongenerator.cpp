@@ -5,7 +5,6 @@
 #include <QTextStream>
 #include <QTextCodec>
 
-#include <algorithm>
 #include <iostream>
 #include <random>
 
@@ -38,10 +37,11 @@ QuestionGenerator::QuestionGenerator(QWidget *parent)
     _fillLabelArray ();
 }
 
+
 QuestionGenerator::~QuestionGenerator()
 {
     delete ui;
-}
+} 
 
 template < typename T >
 int QuestionGenerator::matchCount( const QVector<T>& first, const QVector<T>& sec ) {
