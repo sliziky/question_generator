@@ -32,6 +32,9 @@ public:
     template < typename T >
     void fillVectorFromToWith( QVector<T>&, int,int, const T& );
 
+    template < typename T >
+    int findClosestPosition( const QVector<T>&, int, const T& item );
+
 private slots:
     void on_generate_clicked();
     void on_check_clicked();
@@ -49,19 +52,25 @@ private slots:
     void on_answerButton_8_clicked();
     void on_showAnswersButton_clicked();
 
+    void on_prevButton_clicked();
+
+    void on_sequential_stateChanged(int arg1);
+
 private:
     Ui::QuestionGenerator*        ui;
 
     QVector<QPushButton*>        _buttons;
     QVector<QCheckBox*>          _checkBoxes;
     QVector<QLabel*>             _labels;
-    unsigned long                _numberOfQuestion { 1 };
+    short                        _numberOfQuestion { 0 };
+    short                        _numberOfPrevQ {};
     int                          _offset { 0 };
     float                        _questionsAnswered { 0 };
     QVector<bool>                _ranges;
     float                        _score { 0 };
     QVector<bool>                _topics;
     QVector<Question>            _questions;
+    bool                         _prevButtonClicked { false };
 
     int                          _countCorrectAnswers(const QVector<bool>&);
     QVector<bool>                _getUserAnswers();

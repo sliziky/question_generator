@@ -22,7 +22,7 @@ QuestionGenerator::QuestionGenerator(QWidget *parent)
     ui->setupUi(this);
     // defaultly all Topics are checked
     _topics.fill (true, cf::number_of_topics);
-	// hack to have buttons with text as if the text was in QLabel
+    // hack to have buttons with text as if the text was in QLabel
     ui->answerButton_1->setLayout (ui->horizontalLayout_14);
     ui->answerButton_2->setLayout (ui->horizontalLayout_15);
     ui->answerButton_3->setLayout (ui->horizontalLayout_16);
@@ -31,7 +31,7 @@ QuestionGenerator::QuestionGenerator(QWidget *parent)
     ui->answerButton_6->setLayout (ui->horizontalLayout_19);
     ui->answerButton_7->setLayout (ui->horizontalLayout_20);
     ui->answerButton_8->setLayout (ui->horizontalLayout_21);
-	// just store all the UI things into vectors
+    // just store all the UI things into vectors
     _fillButtonArray();
     _fillCheckBoxArray ();
     _fillLabelArray ();
@@ -41,47 +41,87 @@ QuestionGenerator::QuestionGenerator(QWidget *parent)
 QuestionGenerator::~QuestionGenerator()
 {
     delete ui;
-} 
+}
 
+/**
+ * Return number of matches in two vectors. If vectors are not of the same size, traverse only
+ * to the size of the smaller one.
+ * @tparam T type of elements in vector
+ * @param[in] first - vector to find matches
+ * @param[in] sec - vector to find matches
+ * @return Number of matches
+ */
 template < typename T >
 int QuestionGenerator::matchCount( const QVector<T>& first, const QVector<T>& sec ) {
-	int counter = 0;
-	int min = std::min( first.size(), sec.size() );
-	for ( int i = 0; i < min; ++i ) {
-		if ( first[ i ] == sec[ i ] )
-			++counter;
-	}
-	return counter;
+    int counter = 0;
+    int min = std::min( first.size(), sec.size() );
+    for ( int i = 0; i < min; ++i ) {
+        if ( first[ i ] == sec[ i ] )
+            ++counter;
+    }
+    return counter;
 }
 
+/**
+ * Fill vector in range <from,to) with Val
+ * @tparam T type of elements in vector
+ * @param[in/out] vec - vector to fill
+ * @param[in] from - position to start from
+ * @param[in] to - position to end in
+ * @param[in] val - value to fill
+ */
 template < typename T >
 void QuestionGenerator::fillVectorFromToWith( QVector<T> & vec, int from, int to, const T & val ) {
-	if ( from >= to ) return;
-	for ( ; from < to; ++from ) {
-		vec[ from ] = val;
-	}
+    if ( from >= to ) return;
+    for ( ; from < to; ++from ) {
+        vec[ from ] = val;
+    }
+}
+
+/**
+ * Return (higher) closest position of Item from From position
+ * @tparam T type of elements in vector
+ * @param[in] vec - vector to find in
+ * @param[in] from - position to start from
+ * @param[in] item - element to find
+ * @return Position of Item in vec, if not present, returns -1
+ */
+template < typename T >
+int QuestionGenerator::findClosestPosition( const QVector<T>& vec, int from, const T& item ) {
+    ++from;
+    if (from == vec.size () - 1) return -1;
+    for ( ;from < vec.size (); ++from) {
+        if ( vec[from] == item ) return from;
+    }
+    return -1;
 }
 
 
+/**
+ * Functions loads file from the path
+ * @param[in] path - path for given file
+ * @return 0 if file was loaded sucessfully, -1 otherwise
+ */
 int QuestionGenerator::_loadFile( const QString& path ) {
 
     QFile file(path);
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return -1;
+    }
 
     QTextStream ts(&file);
     // file uses UTF8 encoding
     QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
     ts.setCodec ("UTF-8");
 
-    int counter = 0;
+    int lineNumber = 0;
     QVector<QByteArray> answersToCertainQ; // answers to the specific question
     QVector<bool> correctAnswersToCertainQ; // correct answers to the specific question
     while(!ts.atEnd())
     {
         QString line = ts.readLine();
         //  question
-        if (counter % (cf::number_of_answers + 1) == 0 ) {
+        if (lineNumber % (cf::number_of_answers + 1) == 0 ) {
             _questions.append ({ line.toLocal8Bit (), correctAnswersToCertainQ, answersToCertainQ });
             answersToCertainQ.clear ();
             correctAnswersToCertainQ.clear ();
@@ -91,23 +131,28 @@ int QuestionGenerator::_loadFile( const QString& path ) {
             correctAnswersToCertainQ.append(_isCorrectAnswer (line));
             answersToCertainQ.append(line.toLocal8Bit ());
         }
-        counter++;
+        lineNumber++;
     }
-    //! once the file is loaded we do NOT want to load it again
+    // once the file is loaded we do NOT want to load it again
     ui->loadDefault->setEnabled (false);
     return 0;
 }
 
 bool QuestionGenerator::_isCorrectAnswer(QString& str) {
-    //! removes correct answer in the end and returns if the answer
-    //! was correct
+    // removes correct answer in the end and returns if the answer
+    // was correct
     QString m = str.mid(str.size () - 2, 1);
     str.remove(str.size() - 3, 3);
     return m == "S";
 }
+
+/**
+ * @brief Function generates random number in range <l, h>. Number must be from chosen topics.
+ * @param l - lower bound
+ * @param h - upper bound
+ * @return Random-generated number
+ */
 unsigned long QuestionGenerator::_generateQuestionNumber(unsigned int l, unsigned int h) const{
-    // generates random number in the range
-    // range is given by the chosen topics
     numberGenerator ng(l - 1, h - 1);
     int randomNumber = 0;
     do {
@@ -141,31 +186,56 @@ QVector<bool> QuestionGenerator::_getUserAnswers() {
     return checked;
 }
 
-
+/**
+ * Generates a new question depending on Sequential/Random chosen.
+ * Fullfills labels with corresponding question and answer
+ */
 void QuestionGenerator::on_generate_clicked() {
     ui->check->setEnabled (true);
 
-	// make sure maxSpinBox contains higher value
+    // make sure maxSpinBox contains higher value
     if (ui->minSpinBox->value () > ui->maxSpinBox->value ()) {
         ui->minSpinBox->setValue(ui->maxSpinBox->value ());
     }
+    // return to previous question
+    if (_prevButtonClicked) {
+        // sequential questions
+        if (ui->sequential->isChecked ()) {
+            _numberOfQuestion > 0 ? _numberOfQuestion -= 1 : 0;
+        }
+        else _numberOfQuestion = _numberOfPrevQ;
 
-    if (ui->sequential->isChecked ()) {
-		_numberOfQuestion = ui->minSpinBox->value () + _offset - 1;
-		_offset++;
-	}
-    else { 
-		_numberOfQuestion = _generateQuestionNumber ( static_cast<unsigned int>(ui->minSpinBox->value ()),
-                                                      static_cast<unsigned int>(ui->maxSpinBox->value ()));
+    }
+    // generate new question
+    else {
+        // remember number of previous q
+        _numberOfPrevQ = _numberOfQuestion;
+        if (ui->sequential->isChecked ()) {
+            std::cerr << _numberOfQuestion << "\n";
+            // skip unchecked topics
+            _numberOfQuestion = findClosestPosition(_ranges, _numberOfQuestion, true);
+            if (_numberOfQuestion == -1) _numberOfQuestion = 0; // none topics
+        }
+        else {
+            _numberOfQuestion = _generateQuestionNumber ( static_cast<unsigned int>(ui->minSpinBox->value ()),
+                                                          static_cast<unsigned int>(ui->maxSpinBox->value ()));
+        }
     }
 
     _clearBoxes ();
     _fillQuestionLabel ();
     _fillAnswersLabel ();
     ui->showAnswersButton->setText ("Show answers");
+    ui->prevButton->setEnabled (true);
     _showAnswersClicked = false;
     _clearButtonsBackground ();
 }
+
+/**
+ * Function update score according to number of user correct answers
+ * If question was NOT answered correctly(full score) then append question to the
+ * textEdit with other wrong answers
+ */
 void QuestionGenerator::on_check_clicked()
 {
     auto userAnswers = _getUserAnswers ();
@@ -180,7 +250,6 @@ void QuestionGenerator::on_check_clicked()
     _score += correct;
     _updateScore ( static_cast<double>(_score)/(++_questionsAnswered * 8) * 100 );
     _writeIntoWrongAnswers ();
-
     emit on_generate_clicked ();
 }
 
@@ -188,20 +257,26 @@ void QuestionGenerator::_updateScore( double num ) {
     ui->score->display (num);
 }
 
+/**
+ * Answers which are correct are marked green and S(correct) is appended
+ * Answers which are NOT correct are marked red and N(incorrect) is appended
+ * Answers which user choosed are italic & underlined
+ * Question with these answers is appended into Wrong Answers textedit
+ */
 void QuestionGenerator::_writeIntoWrongAnswers() {
 
     auto userAnswers = _getUserAnswers ();
-    auto correctAnswers = _questions[_numberOfQuestion + 1].correctAnswers ();
+    auto correctAnswers = _questions[ _numberOfQuestion + 1 ].correctAnswers ();
 
-	ui->textEditWrongAnswers->setTextColor("Black");
+    ui->textEditWrongAnswers->setTextColor("Black");
     ui->textEditWrongAnswers->append (_questions[_numberOfQuestion].question ());
 
     QString line;
     for (int i = 0; i < cf::number_of_answers; ++i) {
         line.clear();
-        line += _questions[_numberOfQuestion + 1].answers ()[i];
-		// if the answer is correct
-        if (correctAnswers[i]) {
+        line += _questions[ _numberOfQuestion + 1 ].answers ()[i];
+        // if the answer is correct
+        if (correctAnswers[ i ]) {
             ui->textEditWrongAnswers->setTextColor ("Green");
             line += " S ";
         }
@@ -210,11 +285,11 @@ void QuestionGenerator::_writeIntoWrongAnswers() {
             line += " N ";
         }
         // if user answered to i-th answer then make it italic & underlined
-        _setFontItalicUnderlined (userAnswers[i]);
+        _setFontItalicUnderlined (userAnswers[ i ]);
         ui->textEditWrongAnswers->append (line);
     }
 
-	ui->textEditWrongAnswers->append("");
+    ui->textEditWrongAnswers->append("");
 }
 
 int QuestionGenerator::_countCorrectAnswers( const QVector<bool>& userAnswers ) {
@@ -225,20 +300,25 @@ int QuestionGenerator::_countCorrectAnswers( const QVector<bool>& userAnswers ) 
 void QuestionGenerator::on_loadDefault_clicked()
 {
     if (_loadFile (QCoreApplication::applicationDirPath () + "/otazkyCorr.txt") == 0) {
-		// file was successfuly loaded
-        ui->generate->setEnabled (true);
+        // file was successfuly loaded
         ui->chooseTopicsButton->setEnabled (true);
     }
 }
+
 void QuestionGenerator::on_clear_clicked()
 {
     ui->textEditWrongAnswers->clear ();
 }
 
 
+/**
+ * Function shows new window with all of the topics
+ * User can choose any of them
+ * If at least 1 topics is checked, allow user to generate questions
+ */
 void QuestionGenerator::on_chooseTopicsButton_clicked()
 {
-	// opens new window where user can choose topics
+    // opens new window where user can choose topics
     auto _topicsWindow = std::make_unique< topics >(this);
     _topicsWindow->setChecked(_topics);
     _topicsWindow->exec();
@@ -246,19 +326,24 @@ void QuestionGenerator::on_chooseTopicsButton_clicked()
     _topics = _topicsWindow->checked ();
     _fillRanges ();
 
-	// at least 1 checkbox is checked
+    // at least 1 checkbox is checked
     if (std::find(_topics.begin (), _topics.end (), true) != _topics.end ()) {
         ui->check->setEnabled (true);
         ui->generate->setEnabled (true);
+        ui->showAnswersButton->setEnabled (true);
         emit on_generate_clicked ();
     }
     else {
+        ui->prevButton->setEnabled (false);
         ui->generate->setEnabled (false);
         ui->check->setEnabled (false);
     }
-    ui->showAnswersButton->setEnabled (true);
 }
 
+/**
+ * Function fills vector of bools according to topics choosed
+ * If _ranges[ i ] is true, we want to generate that question
+ */
 void QuestionGenerator::_fillRanges() {
     _ranges.clear ();
     _ranges.fill (false, cf::number_of_questions);
@@ -283,7 +368,7 @@ void QuestionGenerator::_fillRanges() {
 }
 void QuestionGenerator::on_minSpinBox_valueChanged(int)
 {
-    _offset = 0;
+    _numberOfQuestion = ui->minSpinBox->value () - 1;
 }
 void QuestionGenerator::on_answerButton_1_clicked()
 {
@@ -325,10 +410,15 @@ void QuestionGenerator::on_answerButton_8_clicked()
     if (ui->checkBox_8->isChecked ()) ui->checkBox_8->setChecked (false);
     else ui->checkBox_8->setChecked (true);
 }
+
+/**
+ * Function colors button green if it's correct answer, to the red otherwise.
+ * Swaps text of button "Show answers"/"Hide answers"
+ */
 void QuestionGenerator::on_showAnswersButton_clicked()
 {	
     if (_showAnswersClicked) {
-		// hide the answers
+        // hide the answers
         _showAnswersClicked = false;
         _clearButtonsBackground ();
         ui->showAnswersButton->setText ("Show answers");
@@ -337,8 +427,8 @@ void QuestionGenerator::on_showAnswersButton_clicked()
 
     auto correctAnswers = _questions[ _numberOfQuestion + 1 ].correctAnswers ();
     for (int i = 0; i < cf::number_of_answers; ++i) {
-		const QString backgroundColor = correctAnswers[ i ] ? cf::green_background : cf::red_background;
-		_buttons[ i ]->setStyleSheet(backgroundColor);
+        const QString backgroundColor = correctAnswers[ i ] ? cf::green_background : cf::red_background;
+        _buttons[ i ]->setStyleSheet(backgroundColor);
     }
     ui->showAnswersButton->setText ("Hide answers");
     _showAnswersClicked = true;
@@ -378,4 +468,17 @@ void QuestionGenerator::_fillLabelArray()
     _labels.append (ui->label_6);
     _labels.append (ui->label_7);
     _labels.append (ui->label_8);
+}
+
+void QuestionGenerator::on_prevButton_clicked()
+{
+    _prevButtonClicked = true;
+    if (_offset > 2) --_offset;
+    emit on_generate_clicked ();
+    _prevButtonClicked = false;
+}
+
+void QuestionGenerator::on_sequential_stateChanged(int)
+{
+    _numberOfQuestion = ui->minSpinBox->value () - 2;
 }
